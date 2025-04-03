@@ -1,4 +1,4 @@
-%% random distribution ROI
+%% Directional Sensor
 %% DEPLOYMENT
 
 %%
@@ -6,22 +6,20 @@ clc;
 clear;
 
 %% 
-%for TIME=1:50
-%name = ['./case study robustness/map2 v1.2 robust/map2_', num2str(TIME), '.mat']; 
-%load(name);
 close all;
 %% Network parameter
 
 % Monitor area
 Covered_Area = zeros(100,100);
-Obstacle_Area = gen_random_distribution_area();
+Obstacle_Area = genarea();
 %Obstacle_Area = ones(100,100);
+
 % nodes info
-MaxIt = 50;              % Maximum Number of Iterations
+MaxIt = 200;              % Maximum Number of Iterations
 a = 1;                    % Acceleration Coefficient Upper Bound
 N = 40;
-nPop=50;
-rc = 10;
+nPop=30;
+rc = 20;
 rs = 10;
 theta0=pi/3;
 sink=[50 50];
@@ -33,7 +31,6 @@ a=1;
 L=zeros(1,nPop);
 
 %% Init first pop
-
 empty_individual.Position=[]; % Empty solution
 empty_individual.Cost=[];     % Empty cost function of that solution
 BestSol.Position=[];	% Best Solution
@@ -72,9 +69,9 @@ for it = 1:MaxIt
         alpop2(alpop2<0)=alpop2(alpop2<0)+2*pi;
         alpop(:,3)=alpop2;
         if Connectivity_graph(Graph(alpop(:,1:2),rc),[]) == 1
-            [pop_cov,~] = Cov_Func(pop(i).Position,rs,theta0,Obstacle_Area,Covered_Area);
+            %[pop_cov,~] = Cov_Func(pop(i).Position,rs,theta0,Obstacle_Area,Covered_Area);
             [alpop_cov,~]  = Cov_Func(alpop,rs,theta0,Obstacle_Area,Covered_Area);
-            if alpop_cov >= pop_cov
+            if alpop_cov >= pop(i).Cost
                 pop(i).Position=alpop;
                 pop(i).Cost=alpop_cov;
             else
@@ -94,9 +91,13 @@ for it = 1:MaxIt
 
     %% Local search
     for j=1:Onlooker_bee
-        %randomly choose a pop, prioritize that have high coverage
-        i=randsrc(1,1,[1:nPop;E_ave]);
-        
+        % randomly choose a pop, prioritize that have high coverage
+        if sum (E_ave) ~=0
+            i=randsrc(1,1,[1:nPop;E_ave]);
+        else
+            i=randi([1,N]);
+        end
+        % change the position and angle of each node
         for k=1:N
             alpop=pop(i).Position;
             h=randi([1,N]);
@@ -108,9 +109,9 @@ for it = 1:MaxIt
             alpop2(alpop2<0)=alpop2(alpop2<0)+2*pi;
             alpop(:,3)=alpop2;
             if Connectivity_graph(Graph(alpop(:,1:2),rc),[]) == 1
-                [pop_cov,~] = Cov_Func(pop(i).Position,rs,theta0,Obstacle_Area,Covered_Area);
+                %[pop_cov,~] = Cov_Func(pop(i).Position,rs,theta0,Obstacle_Area,Covered_Area);
                 [alpop_cov,~]  = Cov_Func(alpop,rs,theta0,Obstacle_Area,Covered_Area);
-                if alpop_cov >= pop_cov
+                if alpop_cov >= pop(i).Cost
                     pop(i).Position=alpop;
                     pop(i).Cost=alpop_cov;
                 else
@@ -128,14 +129,24 @@ for it = 1:MaxIt
     end
     BestCost(it)=BestSol.Cost;
     disp(['Iteration ' num2str(it) ': Best Cost = ' num2str(BestCost(it))]);
-
+    clear h j k phi alpop alpop2 alpop_cov E E_ave;
 end
 %% plot
 alpop=BestSol.Position;
-[coverage,Covered_Area] = Cov_Func(alpop(1:N,:),rs,theta0,Obstacle_Area,Covered_Area);
+[coverage,Covered_Area] = Cov_Func(alpop,rs,theta0,Obstacle_Area,Covered_Area);
 % show map
-%imagesc(imresize(Obstacle_Area,[1000 1000],'bilinear'))
+%imagesc(imresize(Obstacle_Area,[100 100],'bilinear'))
 hold on;
+
+% show map
+[obs_row, obs_col] = find(Obstacle_Area == 1);
+plot(obs_row, obs_col,'.', 'MarkerSize', 10, 'Color', 'blue');
+%[obs_row, obs_col] = find(Covered_Area == 1/2);
+%plot(obs_row, obs_col,'.', 'MarkerSize', 2, 'Color', 'green');
+[obs_row, obs_col] = find(Covered_Area == 1);
+plot(obs_row, obs_col,'.', 'MarkerSize', 10, 'Color', 'cyan');
+%[discovered_obs_row, discovered_obs_col] = find(Covered_Area == -1);                    % show discovered map
+%plot(discovered_obs_row-1, discovered_obs_col-1,'.', 'MarkerSize', 20, 'Color', 'red');
 %colorbar;
 %{
 for i = 1:1:numel(G.Edges.EndNodes)/2
@@ -145,17 +156,17 @@ end
 for i = 1:N
     plot (alpop(i,2) , alpop(i,1),'ro','MarkerSize', 3,'Color','red');
     text (alpop(i,2) , alpop(i,1), num2str(i),'FontSize',10,'Color','red');
+    theta = linspace(alpop(i,3)-theta0/2 , alpop(i,3) + theta0/2 , 100); % Chia nhỏ góc để vẽ mượt
+    x = alpop(i,1) + rs * cos(theta);
+    y = alpop(i,2) + rs * sin(theta);
+    x_fill = [alpop(i,1), x, alpop(i,1)]; % Bao gồm tâm và các điểm trên cung
+    y_fill = [alpop(i,2), y, alpop(i,2)];
+    fill(y_fill, x_fill, 'g', 'FaceAlpha', 0.3, 'EdgeColor', 'g');
+    %plot(y, x, 'b', 'LineWidth', 2);
 end
-clear i;
-% show map
-[obs_row, obs_col] = find(Obstacle_Area == 1);
-plot(obs_row-1, obs_col-1,'.', 'MarkerSize', 1, 'Color', 'blue');
-[obs_row, obs_col] = find(Covered_Area == 1/2);
-plot(obs_row-1, obs_col-1,'.', 'MarkerSize', 1, 'Color', 'green');
-[obs_row, obs_col] = find(Covered_Area == 1);
-plot(obs_row-1, obs_col-1,'.', 'MarkerSize', 2, 'Color', 'red');
-%[discovered_obs_row, discovered_obs_col] = find(Covered_Area == -1);                    % show discovered map
-%plot(discovered_obs_row-1, discovered_obs_col-1,'.', 'MarkerSize', 20, 'Color', 'red');
+
+clear i x_fill y_fill theta obs_col obs_row;
+
 axis equal;
 xlim([0 size(Obstacle_Area,1)]);
 ylim([0 size(Obstacle_Area,2)]);
