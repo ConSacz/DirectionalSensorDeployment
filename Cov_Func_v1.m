@@ -16,50 +16,41 @@ end
 inside_sector = false(size(Covered_Area,1),size(Covered_Area,1));
 for j=1:(size(pop,1))
     %%
-    % Node position
-    x0 = pop(j,1);
+    x0 = pop(j,1); % Tọa độ tâm
     y0 = pop(j,2);
 
-    % Boundary constraint
-    x_ub=min(ceil(x0+rs),size(Covered_Area,1));
-    x_lb=max(floor(x0-rs),1);
-    y_ub=min(ceil(y0+rs),size(Covered_Area,1));
-    y_lb=max(floor(y0-rs),1);
-
-    % Local Grid
-    [X, Y] = meshgrid(linspace(x_lb, x_ub, x_ub-x_lb+1), linspace(y_lb, y_ub, y_ub-y_lb+1));
+    % Tạo lưới điểm
+    [X, Y] = meshgrid(linspace(1, size(Covered_Area,1),100), linspace(1, size(Covered_Area,1),100));
     
-    % node angle direction
-    alpha = pop(j,3); 
+    % Thông số cung tròn
+    alpha = pop(j,3); % Góc hướng bắt đầu (radian)
     
-    % Distance matrix
+    % Tính khoảng cách từ mỗi điểm đến tâm
     D = sqrt((X - x0).^2 + (Y - y0).^2);
     
-    % Angle matrix
+    % Tính góc của mỗi điểm so với tâm
     Theta = atan2(Y - y0, X - x0); 
     
-    % Boundary constraint
+    % Chuyển góc về khoảng từ 0 đến 2*pi nếu cần
     Theta(Theta < 0) = Theta(Theta < 0) + 2*pi;
     
-    % In rs condition
-    in_circle = D <= rs;
-
-    % Theta in theta0 condition
+    % Kiểm tra điểm nào thuộc cung
+    
+    in_circle = D <= rs; % Điều kiện 1: Nằm trong bán kính
     if alpha - theta0/2 < 0
         in_angle = (Theta >= alpha - theta0/2 +2*pi) | (Theta <= alpha +theta0/2); 
     elseif alpha + theta0/2 > 2*pi 
         in_angle = (Theta >= alpha - theta0/2) | (Theta <= alpha + theta0/2 - 2*pi);
     else
-        in_angle = (Theta >= alpha - theta0/2) & (Theta <= alpha + theta0/2); 
+        in_angle = (Theta >= alpha - theta0/2) & (Theta <= alpha + theta0/2); % Điều kiện 2: Nằm trong góc cung
     end
-    
-    %both conditions
-    inside_sector(y_lb:y_ub,x_lb:x_ub) = inside_sector(y_lb:y_ub,x_lb:x_ub) | (in_circle & in_angle); 
-    
-end       
-Covered_Area = inside_sector.* Obstacle_Area;
-    %clear D Theta in_circle in_angle inside_sector;
 
+    inside_sector = inside_sector | (in_circle & in_angle); % Kết hợp hai điều kiện
+    %[x_cover, y_cover] = find(inside_sector==1);
+    %Covered_Area (X(x_cover,y_cover),Y(x_cover,y_cover)) = Obstacle_Area (X(x_cover,y_cover),Y(x_cover,y_cover));
+    Covered_Area = inside_sector.* Obstacle_Area;
+    %clear D Theta in_circle in_angle inside_sector;
+end
 
 %% add obstacle to covered area
 [obs_row, obs_col] = find(Obstacle_Area == 0);

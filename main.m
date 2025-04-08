@@ -11,7 +11,7 @@ close all;
 
 % Monitor area
 Covered_Area = zeros(100,100);
-Obstacle_Area = genarea();
+Obstacle_Area = gen_random_distribution_area();
 %Obstacle_Area = ones(100,100);
 
 % nodes info
@@ -61,7 +61,7 @@ for it = 1:MaxIt
     %% Global search
     for i=1:Scout_bee
         k=randi([1,nPop]);
-        phi=a*unifrnd(-1, +1, [N 3])*(1-L(i)/MaxIt)^2;
+        phi=a*unifrnd(-1, +1, [N 3]);
         alpop = pop(i).Position + phi.*(pop(i).Position-pop(k).Position);
         alpop(:,1:2) = min(max(alpop(:,1:2), 1),size(Obstacle_Area,1)-1);
         alpop2 = alpop(:,3);
@@ -101,7 +101,7 @@ for it = 1:MaxIt
         for k=1:N
             alpop=pop(i).Position;
             h=randi([1,N]);
-            phi=a*unifrnd(-1, +1, [1 3]);
+            phi=a*unifrnd(-1, +1, [1 3])*(1-L(i)/MaxIt)^2;
             alpop(k,1:3)  = pop(i).Position(k,1:3) + phi.*(pop(i).Position(k,1:3)-pop(i).Position(h,1:3));
             alpop(:,1:2) = min(max(alpop(:,1:2), 1),size(Obstacle_Area,1)-1);
             alpop2 = alpop(:,3);
@@ -156,16 +156,16 @@ end
 for i = 1:N
     plot (alpop(i,2) , alpop(i,1),'ro','MarkerSize', 3,'Color','red');
     text (alpop(i,2) , alpop(i,1), num2str(i),'FontSize',10,'Color','red');
-    theta = linspace(alpop(i,3)-theta0/2 , alpop(i,3) + theta0/2 , 100); % Chia nhỏ góc để vẽ mượt
+    theta = linspace(alpop(i,3)-theta0/2 , alpop(i,3) + theta0/2 , 100); 
     x = alpop(i,1) + rs * cos(theta);
     y = alpop(i,2) + rs * sin(theta);
-    x_fill = [alpop(i,1), x, alpop(i,1)]; % Bao gồm tâm và các điểm trên cung
+    x_fill = [alpop(i,1), x, alpop(i,1)]; 
     y_fill = [alpop(i,2), y, alpop(i,2)];
     fill(y_fill, x_fill, 'g', 'FaceAlpha', 0.3, 'EdgeColor', 'g');
-    %plot(y, x, 'b', 'LineWidth', 2);
+    
 end
 
-clear i x_fill y_fill theta obs_col obs_row;
+%clear i x_fill y_fill theta obs_col obs_row;
 
 axis equal;
 xlim([0 size(Obstacle_Area,1)]);
