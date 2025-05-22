@@ -14,17 +14,20 @@ end
 
 %% check sensor covered area
 inside_sector = false(size(Covered_Area,1),size(Covered_Area,1));
+%%
 for j=1:(size(pop,1))
     %%
-    % Node position
+    % Node position j-th
     x0 = pop(j,1);
     y0 = pop(j,2);
+    thetaJ=theta0(j);
+    rsJ=rs(j);
 
     % Boundary constraint
-    x_ub=min(ceil(x0+rs),size(Covered_Area,1));
-    x_lb=max(floor(x0-rs),1);
-    y_ub=min(ceil(y0+rs),size(Covered_Area,1));
-    y_lb=max(floor(y0-rs),1);
+    x_ub=min(ceil(x0+rsJ),size(Covered_Area,1));
+    x_lb=max(floor(x0-rsJ),1);
+    y_ub=min(ceil(y0+rsJ),size(Covered_Area,1));
+    y_lb=max(floor(y0-rsJ),1);
 
     % Local Grid
     [X, Y] = meshgrid(linspace(x_lb, x_ub, x_ub-x_lb+1), linspace(y_lb, y_ub, y_ub-y_lb+1));
@@ -42,21 +45,23 @@ for j=1:(size(pop,1))
     Theta(Theta < 0) = Theta(Theta < 0) + 2*pi;
     
     % In rs condition
-    in_circle = D <= rs;
+    in_circle = D <= rsJ;
 
     % Theta in theta0 condition
-    if alpha - theta0/2 < 0
-        in_angle = (Theta >= alpha - theta0/2 +2*pi) | (Theta <= alpha +theta0/2); 
-    elseif alpha + theta0/2 > 2*pi 
-        in_angle = (Theta >= alpha - theta0/2) | (Theta <= alpha + theta0/2 - 2*pi);
+    
+    if alpha - thetaJ/2 < 0
+        in_angle = (Theta >= alpha - thetaJ/2 +2*pi) | (Theta <= alpha +thetaJ/2); 
+    elseif alpha + thetaJ/2 > 2*pi 
+        in_angle = (Theta >= alpha - thetaJ/2) | (Theta <= alpha + thetaJ/2 - 2*pi);
     else
-        in_angle = (Theta >= alpha - theta0/2) & (Theta <= alpha + theta0/2); 
+        in_angle = (Theta >= alpha - thetaJ/2) & (Theta <= alpha + thetaJ/2); 
     end
     
     %both conditions
     inside_sector(y_lb:y_ub,x_lb:x_ub) = inside_sector(y_lb:y_ub,x_lb:x_ub) | (in_circle & in_angle); 
     
 end       
+%%
 Covered_Area = inside_sector.* Obstacle_Area;
     %clear D Theta in_circle in_angle inside_sector;
 
